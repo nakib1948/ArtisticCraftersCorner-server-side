@@ -44,16 +44,26 @@ async function run() {
   
 
     const classCollection = client.db("summercamp").collection("classes");
+    const instructorCollection = client.db("summercamp").collection("instructor");
 
    
    app.get('/classes',async(req,res)=>{
 
      const result = await classCollection.find().sort({ enrolled: -1 }).toArray()
-     const cutdata=  result.slice(0,6)
+     const cutdata= await result.slice(0,6)
    // console.log(result)
      res.send(cutdata)
 
    })
+
+   app.get('/instructor',async(req,res)=>{
+
+    const result = await instructorCollection.find().toArray()
+    const cutdata=await result.slice(0,6)
+  // console.log(result)
+    res.send(cutdata)
+
+  })
 
 
     await client.db("admin").command({ ping: 1 });
