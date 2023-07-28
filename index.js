@@ -4,7 +4,7 @@ require("dotenv").config();
 const app = express();
 const bodyParser = require("body-parser");
 const port = process.env.PORT || 3000;
-const { MongoClient, ServerApiVersion,ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 app.use(bodyParser.json());
 app.use(cors());
@@ -21,7 +21,6 @@ const client = new MongoClient(uri, {
 });
 
 const verifyJWT = (req, res, next) => {
-  
   const authorization = req.headers.authorization;
   if (!authorization) {
     return res.send({ error: true, message: "unauthorized access" });
@@ -41,37 +40,39 @@ const verifyJWT = (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-  
 
     const classCollection = client.db("summercamp").collection("classes");
     const instructorCollection = client.db("summercamp").collection("instructor");
 
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "7d",
+      });
+      res.send({ token });
+    });
+
+    app.get("/classes", async (req, res) => {
+      const result = await classCollection
+        .find()
+        .sort({ enrolled: -1 })
+        .toArray();
    
-   app.get('/classes',async(req,res)=>{
+      res.send(result);
+    });
 
-     const result = await classCollection.find().sort({ enrolled: -1 }).toArray()
-     const cutdata= await result.slice(0,6)
-   // console.log(result)
-     res.send(cutdata)
-
-   })
-
-   app.get('/instructor',async(req,res)=>{
-
-    const result = await instructorCollection.find().toArray()
-    const cutdata=await result.slice(0,6)
-  // console.log(result)
-    res.send(cutdata)
-
-  })
-
+    app.get("/instructor", async (req, res) => {
+      const result = await instructorCollection.find().toArray();
+     
+      res.send(result)
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-   
   }
 }
 run().catch(console.dir);
