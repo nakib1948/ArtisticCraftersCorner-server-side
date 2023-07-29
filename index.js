@@ -23,13 +23,15 @@ const client = new MongoClient(uri, {
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
-    return res.status(401).send({ error: true, message: "unauthorized access" });
+    return res
+      .status(401)
+      .send({ error: true, message: "unauthorized access" });
   }
   const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
     if (error) {
       return res
-        .status(403)
+        .status(401)
         .send({ error: true, message: "unauthorized access" });
     }
     req.decoded = decoded;
@@ -39,11 +41,13 @@ const verifyJWT = (req, res, next) => {
 
 async function run() {
   try {
- 
-
     const classCollection = client.db("summercamp").collection("classes");
-    const instructorCollection = client.db("summercamp").collection("instructor");
-    const studentSelecetedClassCollection = client.db("summercamp").collection("selectedclass");
+    const instructorCollection = client
+      .db("summercamp")
+      .collection("instructor");
+    const studentSelecetedClassCollection = client
+      .db("summercamp")
+      .collection("selectedclass");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -59,27 +63,45 @@ async function run() {
         .find()
         .sort({ enrolled: -1 })
         .toArray();
-   
+
       res.send(result);
     });
 
     app.get("/instructor", async (req, res) => {
       const result = await instructorCollection.find().toArray();
-     
-      res.send(result)
+
+      res.send(result);
     });
 
-    app.post('/selectedclasses',verifyJWT,async(req,res)=>{
-        const data=req.body
-        const result=await studentSelecetedClassCollection.insertOne(data)
-        res.send(result)
-    })
+    app.post("/selectedclasses", verifyJWT, async (req, res) => {
+      const data = req.body;
+      const query = { _id: data._id };
+      const getid = await studentSelecetedClassCollection.findOne(query);
+    
+      if (getid) {
+        res.send('already exists');
+      } else {
+        console.log(req.decoded.email);
+        const result = await studentSelecetedClassCollection.insertOne(data);
+        res.send(result);
+      }
+    });
+    
 
-    app.get('/selectedclasses',verifyJWT,async(req,res)=>{
-      const email=req.params.email;
-      
-      res.send(result)
-  })
+    app.get("/selectedclasses", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+
+      if (req.decoded.email != email) {
+        console.log('hello')
+        return res
+          .status(401)
+          .send({ error: true, message: "unauthorized access" });
+      }
+      const query = { email: email };
+      const user = await studentSelecetedClassCollection.find(query).toArray();
+      console.log(user);
+      res.send(user);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
