@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const stripe=require('stripe')(process.env.PAYMENT_SECRET_KEY)
 app.use(bodyParser.json());
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -42,12 +43,9 @@ const verifyJWT = (req, res, next) => {
 async function run() {
   try {
     const classCollection = client.db("summercamp").collection("classes");
-    const instructorCollection = client
-      .db("summercamp")
-      .collection("instructor");
-    const studentSelecetedClassCollection = client
-      .db("summercamp")
-      .collection("selectedclass");
+    const instructorCollection = client.db("summercamp").collection("instructor");
+    const studentSelecetedClassCollection = client.db("summercamp").collection("selectedclass");
+    const paymentCollection = client.db("summercamp").collection("payments");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -75,7 +73,7 @@ async function run() {
 
     app.post("/selectedclasses", verifyJWT, async (req, res) => {
       const data = req.body;
-      const query = { _id: data._id };
+      const query = { courseId: data.courseId,email:data.email };
       const getid = await studentSelecetedClassCollection.findOne(query);
     
       if (getid) {
@@ -99,9 +97,39 @@ async function run() {
       }
       const query = { email: email };
       const user = await studentSelecetedClassCollection.find(query).toArray();
-      console.log(user);
+     
       res.send(user);
     });
+
+    app.delete("/selectedclasses/:id", verifyJWT, async (req, res) => {
+      
+       const id=req.params.id
+       const query={_id:id}
+       const result=await studentSelecetedClassCollection.deleteOne(query)
+       res.send(result)
+    });
+
+    app.post('/create-payment-intent',verifyJWT,async(req,res)=>{
+      const {price}=req.body;
+      const amount=price*100
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:amount,
+        currency:'usd',
+        payment_method_types:['card']
+      })
+      res.send({
+        clientSecret:paymentIntent.client_secret
+      })
+    })
+
+    app.post('/payments',verifyJWT,async(req,res)=>{
+      const payment=req.body
+      const InsertResult=await paymentCollection.insertOne(payment)
+
+      const query={ courseId: { $in: payment.coursesId } }
+      const deleteResult=await studentSelecetedClassCollection.deleteMany(query)
+      res.send({InsertResult,deleteResult})
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -110,7 +138,7 @@ async function run() {
   } finally {
   }
 }
-run().catch(console.dir);
+run().catch(console.dir)
 
 app.listen(port, function () {
   console.log(`Listening on port ${port}`);
