@@ -79,7 +79,7 @@ async function run() {
       if (getid) {
         res.send('already exists');
       } else {
-        console.log(req.decoded.email);
+       
         const result = await studentSelecetedClassCollection.insertOne(data);
         res.send(result);
       }
@@ -103,9 +103,13 @@ async function run() {
 
     app.delete("/selectedclasses/:id", verifyJWT, async (req, res) => {
       
+       const email=req.decoded.email
+       console.log(email)
        const id=req.params.id
-       const query={_id:id}
-       const result=await studentSelecetedClassCollection.deleteOne(query)
+       console.log(id)
+       const query = { courseId: id, email: email };
+       const result = await studentSelecetedClassCollection.deleteOne(query);
+       
        res.send(result)
     });
 
@@ -128,8 +132,47 @@ async function run() {
 
       const query={ courseId: { $in: payment.coursesId } }
       const deleteResult=await studentSelecetedClassCollection.deleteMany(query)
-      res.send({InsertResult,deleteResult})
+
+      const updateResult = await classCollection.updateMany(
+        { 
+          _id: { $in: payment.coursesId.map(id => new ObjectId(id)) },
+          availableSeats: { $exists: true, $gt: 0 } 
+        },
+        { $inc: { availableSeats: -1 } }
+      );
+
+      res.send({InsertResult,deleteResult,updateResult})
     })
+
+    app.get("/payments", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+    
+      if (req.decoded.email !== email) {
+        return res.status(401).send({ error: true, message: "unauthorized access" });
+      }
+    
+      const query = { email: email };
+      const sortOptions = { _id: -1 }; 
+    
+      const user = await paymentCollection.find(query).sort(sortOptions).toArray();
+    
+      res.send(user);
+    });
+
+    app.get('/existsenroll/:id',verifyJWT,async(req,res)=>{
+
+      const id=req.params.id
+      const query = { coursesId: { $in: [id] }, email:req.decoded.email };
+ 
+      const result = await paymentCollection.find(query).toArray();
+      if (result.length > 0) {
+        res.send({ exists: true });
+      } else {
+        res.send({ exists: false });
+      }
+        
+    })
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
