@@ -46,6 +46,7 @@ async function run() {
     const instructorCollection = client.db("summercamp").collection("instructor");
     const studentSelecetedClassCollection = client.db("summercamp").collection("selectedclass");
     const paymentCollection = client.db("summercamp").collection("payments");
+    const usersCollection = client.db("summercamp").collection("users");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -54,6 +55,20 @@ async function run() {
         expiresIn: "7d",
       });
       res.send({ token });
+    });
+
+    app.post('/users', async (req, res) => {
+      console.log('hello')
+      const user = req.body;
+      const query = { email: user.email }
+      const existingUser = await usersCollection.findOne(query);
+
+      if (existingUser) {
+        return res.send({ message: 'user already exists' })
+      }
+
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
     });
 
     app.get("/classes", async (req, res) => {
@@ -104,9 +119,9 @@ async function run() {
     app.delete("/selectedclasses/:id", verifyJWT, async (req, res) => {
       
        const email=req.decoded.email
-       console.log(email)
+     
        const id=req.params.id
-       console.log(id)
+     
        const query = { courseId: id, email: email };
        const result = await studentSelecetedClassCollection.deleteOne(query);
        
@@ -172,6 +187,7 @@ async function run() {
       }
         
     })
+
     
 
     await client.db("admin").command({ ping: 1 });
