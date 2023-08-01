@@ -77,7 +77,7 @@ async function run() {
       res.send(result);
     });
     app.get('/users/admin/:email',verifyJWT,async(req,res)=>{
-      const email=req.params.email
+      const email=req.params.email;
       if(req.decoded.email !=email){
         res.send({admin:false})
       }
