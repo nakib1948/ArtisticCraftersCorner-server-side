@@ -119,8 +119,50 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/instructorclasses", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+     
+      if (req.decoded.email != email) {
+        return res
+          .status(401)
+          .send({ error: true, message: "unauthorized access" });
+      }
+      const query = { instructorEmail: email };
+      
+      const user = await classCollection.find(query).toArray();
+
+      res.send(user);
+    });
+    app.get('/instructorclass/:id',verifyJWT,async(req,res)=>{
+      const id = (req.params.id).trim();
+     // console.log(id)
+     const query={_id: new ObjectId(id)}
+     const result=await classCollection.find(query).toArray();
+    
+      res.send(result)
+    })
+
+    app.patch("/instructorupdateclasses/:id", verifyJWT, async (req, res) => {
+      const id = (req.params.id).trim();
+      const course = req.body;
+      console.log('update')
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          name: course.name,
+          image:course.image,
+          instructor:course.instructor,
+          instructorEmail:course.instructorEmail,
+          availableSeats:course.availableSeats,
+          price:course.price
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.post('/classes',verifyJWT,async(req,res)=>{
-        const newClass=req.body
+        const newClass=req.body;
       
         const result=await classCollection.insertOne(newClass)
         res.send(result)
