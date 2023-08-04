@@ -61,8 +61,18 @@ async function run() {
       res.send({ token });
     });
 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
     app.post("/users", async (req, res) => {
-      console.log("hello");
+      
       const user = req.body;
       const query = { email: user.email };
       const existingUser = await usersCollection.findOne(query);
@@ -96,7 +106,7 @@ async function run() {
       }
     });
 
-    app.patch("/users/role/:id", verifyJWT, async (req, res) => {
+    app.patch("/users/role/:id", verifyJWT,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
 
@@ -123,7 +133,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/feedback", verifyJWT, async (req, res) => {
+    app.patch("/feedback", verifyJWT,verifyAdmin, async (req, res) => {
       const feedback = req.body.feedback;
       const id = req.body.id;
 
@@ -136,7 +146,7 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    app.patch('/statupdate',verifyJWT,async(req,res)=>{
+    app.patch('/statupdate',verifyJWT,verifyAdmin,async(req,res)=>{
         const status=req.body.status
         const id=req.body.id
 
@@ -201,7 +211,8 @@ async function run() {
     });
 
     app.get("/instructor", async (req, res) => {
-      const result = await instructorCollection.find().toArray();
+      const query={role:'instructor'}
+      const result = await usersCollection.find(query).toArray();
 
       res.send(result);
     });
