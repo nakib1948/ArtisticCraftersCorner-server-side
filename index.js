@@ -87,7 +87,7 @@ async function run() {
           .status(401)
           .send({ error: true, message: "unauthorized access" });
       }
-   
+
       const query = { email: email };
       const user = await usersCollection.find(query).toArray();
       if (user?.length > 0) {
@@ -110,7 +110,7 @@ async function run() {
       res.send(result);
     });
     app.get("/classes", async (req, res) => {
-      const query={status:'approved'}
+      const query = { status: "approved" };
       const result = await classCollection
         .find(query)
         .sort({ enrolled: -1 })
@@ -119,60 +119,86 @@ async function run() {
       res.send(result);
     });
     app.get("/manageclass", async (req, res) => {
-      const result = await classCollection
-        .find()
-        .toArray();
+      const result = await classCollection.find().toArray();
       res.send(result);
     });
 
+    app.patch("/feedback", verifyJWT, async (req, res) => {
+      const feedback = req.body.feedback;
+      const id = req.body.id;
+
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          feedback: feedback,
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+    app.patch('/statupdate',verifyJWT,async(req,res)=>{
+        const status=req.body.status
+        const id=req.body.id
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            status: status,
+          },
+        };
+        const result = await classCollection.updateOne(filter, updateDoc);
+        res.send(result);
+
+    })
+
     app.get("/instructorclasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
-     
+
       if (req.decoded.email != email) {
         return res
           .status(401)
           .send({ error: true, message: "unauthorized access" });
       }
       const query = { instructorEmail: email };
-      
+
       const user = await classCollection.find(query).toArray();
 
       res.send(user);
     });
-    app.get('/instructorclass/:id',verifyJWT,async(req,res)=>{
-      const id = (req.params.id).trim();
-     // console.log(id)
-     const query={_id: new ObjectId(id)}
-     const result=await classCollection.find(query).toArray();
-    
-      res.send(result)
-    })
+    app.get("/instructorclass/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id.trim();
+      // console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const result = await classCollection.find(query).toArray();
+
+      res.send(result);
+    });
 
     app.patch("/instructorupdateclasses/:id", verifyJWT, async (req, res) => {
-      const id = (req.params.id).trim();
+      const id = req.params.id.trim();
       const course = req.body;
-      console.log('update')
+      console.log("update");
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
           name: course.name,
-          image:course.image,
-          instructor:course.instructor,
-          instructorEmail:course.instructorEmail,
-          availableSeats:course.availableSeats,
-          price:course.price
+          image: course.image,
+          instructor: course.instructor,
+          instructorEmail: course.instructorEmail,
+          availableSeats: course.availableSeats,
+          price: course.price,
         },
       };
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
-    app.post('/classes',verifyJWT,async(req,res)=>{
-        const newClass=req.body;
-      
-        const result=await classCollection.insertOne(newClass)
-        res.send(result)
-    })
+    app.post("/classes", verifyJWT, async (req, res) => {
+      const newClass = req.body;
+
+      const result = await classCollection.insertOne(newClass);
+      res.send(result);
+    });
 
     app.get("/instructor", async (req, res) => {
       const result = await instructorCollection.find().toArray();
