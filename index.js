@@ -118,6 +118,12 @@ async function run() {
 
       res.send(result);
     });
+    app.get("/manageclass", async (req, res) => {
+      const result = await classCollection
+        .find()
+        .toArray();
+      res.send(result);
+    });
 
     app.get("/instructorclasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
