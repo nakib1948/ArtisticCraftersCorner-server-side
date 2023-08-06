@@ -31,7 +31,6 @@ const verifyJWT = (req, res, next) => {
   const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
     if (error) {
-      console.log('eikane')
       return res
         .status(401)
         .send({ error: true, message: "unauthorized access" });
@@ -64,16 +63,17 @@ async function run() {
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
-      const query = { email: email }
+      const query = { email: email };
       const user = await usersCollection.findOne(query);
-      if (user?.role !== 'admin') {
-        return res.status(403).send({ error: true, message: 'forbidden message' });
+      if (user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden message" });
       }
       next();
-    }
+    };
 
     app.post("/users", async (req, res) => {
-      
       const user = req.body;
       const query = { email: user.email };
       const existingUser = await usersCollection.findOne(query);
@@ -92,13 +92,9 @@ async function run() {
       res.send(result);
     });
     app.get("/users/role/:email", verifyJWT, async (req, res) => {
-      
       const email = req.params.email;
       if (req.decoded.email != email) {
-        console.log('eikane')
-        return res
-          .status(401)
-          .send({  message: "unauthorized access" });
+        return res.status(401).send({ message: "unauthorized access" });
       }
 
       const query = { email: email };
@@ -109,7 +105,7 @@ async function run() {
       }
     });
 
-    app.patch("/users/role/:id", verifyJWT,verifyAdmin, async (req, res) => {
+    app.patch("/users/role/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
 
@@ -136,7 +132,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/feedback", verifyJWT,verifyAdmin, async (req, res) => {
+    app.patch("/feedback", verifyJWT, verifyAdmin, async (req, res) => {
       const feedback = req.body.feedback;
       const id = req.body.id;
 
@@ -149,28 +145,25 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    app.patch('/statupdate',verifyJWT,verifyAdmin,async(req,res)=>{
-        const status=req.body.status
-        const id=req.body.id
+    app.patch("/statupdate", verifyJWT, verifyAdmin, async (req, res) => {
+      const status = req.body.status;
+      const id = req.body.id;
 
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $set: {
-            status: status,
-          },
-        };
-        const result = await classCollection.updateOne(filter, updateDoc);
-        res.send(result);
-
-    })
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.get("/instructorclasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
 
       if (req.decoded.email != email) {
-        return res
-          .status(401)
-          .send({  message: "unauthorized access" });
+        return res.status(401).send({ message: "unauthorized access" });
       }
       const query = { instructorEmail: email };
 
@@ -180,7 +173,7 @@ async function run() {
     });
     app.get("/instructorclass/:id", verifyJWT, async (req, res) => {
       const id = req.params.id.trim();
-      // console.log(id)
+
       const query = { _id: new ObjectId(id) };
       const result = await classCollection.find(query).toArray();
 
@@ -190,7 +183,7 @@ async function run() {
     app.patch("/instructorupdateclasses/:id", verifyJWT, async (req, res) => {
       const id = req.params.id.trim();
       const course = req.body;
-      console.log("update");
+
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
@@ -214,7 +207,7 @@ async function run() {
     });
 
     app.get("/instructor", async (req, res) => {
-      const query={role:'instructor'}
+      const query = { role: "instructor" };
       const result = await usersCollection.find(query).toArray();
 
       res.send(result);
@@ -237,9 +230,7 @@ async function run() {
       const email = req.query.email;
 
       if (req.decoded.email != email) {
-        return res
-          .status(401)
-          .send({message: "unauthorized access" });
+        return res.status(401).send({ message: "unauthorized access" });
       }
       const query = { email: email };
       const user = await studentSelecetedClassCollection.find(query).toArray();
@@ -285,10 +276,8 @@ async function run() {
           _id: { $in: payment.coursesId.map((id) => new ObjectId(id)) },
           availableSeats: { $exists: true, $gt: 0 },
         },
-        { $inc: { availableSeats: -1, enrolled: 1  } }
+        { $inc: { availableSeats: -1, enrolled: 1 } }
       );
-
-      
 
       res.send({ InsertResult, deleteResult, updateResult });
     });
@@ -297,9 +286,7 @@ async function run() {
       const email = req.query.email;
 
       if (req.decoded.email !== email) {
-        return res
-          .status(401)
-          .send({  message: "unauthorized access" });
+        return res.status(401).send({ message: "unauthorized access" });
       }
 
       const query = { email: email };
@@ -326,9 +313,6 @@ async function run() {
     });
 
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
   } finally {
   }
 }
