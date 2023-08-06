@@ -31,6 +31,7 @@ const verifyJWT = (req, res, next) => {
   const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
     if (error) {
+      console.log('eikane')
       return res
         .status(401)
         .send({ error: true, message: "unauthorized access" });
@@ -91,11 +92,13 @@ async function run() {
       res.send(result);
     });
     app.get("/users/role/:email", verifyJWT, async (req, res) => {
+      
       const email = req.params.email;
       if (req.decoded.email != email) {
+        console.log('eikane')
         return res
           .status(401)
-          .send({ error: true, message: "unauthorized access" });
+          .send({  message: "unauthorized access" });
       }
 
       const query = { email: email };
@@ -167,7 +170,7 @@ async function run() {
       if (req.decoded.email != email) {
         return res
           .status(401)
-          .send({ error: true, message: "unauthorized access" });
+          .send({  message: "unauthorized access" });
       }
       const query = { instructorEmail: email };
 
@@ -236,7 +239,7 @@ async function run() {
       if (req.decoded.email != email) {
         return res
           .status(401)
-          .send({ error: true, message: "unauthorized access" });
+          .send({message: "unauthorized access" });
       }
       const query = { email: email };
       const user = await studentSelecetedClassCollection.find(query).toArray();
@@ -282,8 +285,10 @@ async function run() {
           _id: { $in: payment.coursesId.map((id) => new ObjectId(id)) },
           availableSeats: { $exists: true, $gt: 0 },
         },
-        { $inc: { availableSeats: -1 } }
+        { $inc: { availableSeats: -1, enrolled: 1  } }
       );
+
+      
 
       res.send({ InsertResult, deleteResult, updateResult });
     });
@@ -294,7 +299,7 @@ async function run() {
       if (req.decoded.email !== email) {
         return res
           .status(401)
-          .send({ error: true, message: "unauthorized access" });
+          .send({  message: "unauthorized access" });
       }
 
       const query = { email: email };
