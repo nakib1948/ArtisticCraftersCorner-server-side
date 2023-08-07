@@ -8,8 +8,16 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 app.use(bodyParser.json());
-app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: "*",
+    methods: "GET,POST,PATCH,PUT,DELETE",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "*",
+  })
+);
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qxayaa3.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -19,6 +27,9 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   },
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  maxPoolSize: 10,
 });
 
 const verifyJWT = (req, res, next) => {
